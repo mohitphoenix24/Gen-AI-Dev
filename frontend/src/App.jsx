@@ -2,15 +2,21 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import Header from "./components/Header";
 import ModelSelector from "./components/ModelSelector";
+import SettingsPopover from "./components/SettingsPopover";
 import ChatWindow from "./components/ChatWindow";
 import Composer from "./components/Composer";
 import { useModels } from "./hooks/useModels";
 import { useChat } from "./hooks/useChat";
 
+const DEFAULT_TEMPERATURE = 1.0;
+const DEFAULT_MAX_TOKENS = 1024;
+
 export default function App() {
   const { models, status: modelsStatus, error: modelsError } = useModels();
   const [selectedModelId, setSelectedModelId] = useState("");
   const [prefill, setPrefill] = useState(null);
+  const [temperature, setTemperature] = useState(DEFAULT_TEMPERATURE);
+  const [maxTokens, setMaxTokens] = useState(DEFAULT_MAX_TOKENS);
   const { messages, isStreaming, sendMessage, stopGeneration, regenerate } = useChat();
 
   // Once the catalog loads, default to the first model that's actually usable.
@@ -25,13 +31,22 @@ export default function App() {
   return (
     <div className="app">
       <Header>
-        <ModelSelector
-          models={models}
-          status={modelsStatus}
-          selectedId={selectedModelId}
-          onChange={setSelectedModelId}
-          disabled={isStreaming}
-        />
+        <div className="header-controls">
+          <SettingsPopover
+            temperature={temperature}
+            onTemperatureChange={setTemperature}
+            maxTokens={maxTokens}
+            onMaxTokensChange={setMaxTokens}
+            disabled={isStreaming}
+          />
+          <ModelSelector
+            models={models}
+            status={modelsStatus}
+            selectedId={selectedModelId}
+            onChange={setSelectedModelId}
+            disabled={isStreaming}
+          />
+        </div>
       </Header>
 
       {modelsStatus === "error" && <div className="banner banner-error">{modelsError}</div>}
@@ -48,7 +63,7 @@ export default function App() {
       />
 
       <Composer
-        onSend={(question) => sendMessage(question, selectedModel)}
+        onSend={(question) => sendMessage(question, selectedModel, { temperature, maxTokens })}
         onStop={stopGeneration}
         isStreaming={isStreaming}
         disabled={isStreaming || !selectedModel}

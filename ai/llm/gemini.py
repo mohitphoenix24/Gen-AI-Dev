@@ -1,7 +1,8 @@
 import os
-from typing import Iterator
+from typing import Iterator, Optional
 
 from google import genai
+from google.genai import types
 
 from .base import LLMProvider, ModelInfo
 
@@ -37,8 +38,30 @@ class GeminiProvider(LLMProvider):
             )
         ]
 
-    def stream(self, model: str, question: str) -> Iterator[str]:
+    def stream(
+        self,
+        model: str,
+        messages: list[dict],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterator[str]:
         client = genai.Client()  # reads GEMINI_API_KEY / GOOGLE_API_KEY from the environment
-        for chunk in client.models.generate_content_stream(model=model, contents=question):
+
+        # Gemini is the one provider whose SDK doesn't take {"role": "user"/
+        # "assistant", "content": str} directly - it wants "model" instead of
+        # "assistant", and text nested under "parts". This is exactly the
+        # translation the provider interface exists for: everyone upstream
+        # still speaks the one generic message shape.
+        contents = [
+            {"role": "model" if m["role"] == "assistant" else "user", "parts": [{"text": m["content"]}]}
+            for m in messages
+        ]
+
+        config = None
+        if temperature is not None or max_tokens is not None:
+            config = types.GenerateContentConfig(temperature=temperature, max_output_tokens=max_tokens)
+
+        for chunk in client.models.generate_content_stream(model=model, contents=contents, config=config):
             if chunk.text:
                 yield chunk.text

@@ -23,20 +23,24 @@ The learning plan looks like this:
 9. Multi-step agent
 10. Multi-agent system
 
-Step 1 is deliberately the simplest possible thing — send a question, get an answer, no loop, no memory, no tools. But "simplest possible thing" turned into a real testbed once I started asking questions like *what does it take to swap models*, *what does streaming actually look like over the wire*, and *how do you render Markdown from a model without either trusting it blindly or building a parser yourself*. So Step 1 ended up growing into:
+Step 1 is deliberately the simplest possible thing — send a question, get an answer, no tools, no agent loop. But "simplest possible thing" turned into a real testbed once I started asking questions like *what does it take to swap models*, *what does streaming actually look like over the wire*, *how do you render Markdown from a model without either trusting it blindly or building a parser yourself*, and *why does a "chat" that forgets every previous message even count as a chat*. So Step 1 ended up growing into:
 
 - a small backend that can talk to **five** different LLM providers behind one identical interface
 - real token-by-token streaming over Server-Sent Events, not a fake typing animation
 - a chat UI that renders Markdown, code (with real syntax highlighting), tables, and LaTeX properly — because half of what a model says back is code, and rendering it as a wall of plain text defeats the point
+- actual conversational memory — every request sends the full conversation so far, not just the latest message, so follow-up questions work
+- temperature and max-tokens exposed as real controls, not hardcoded
 
-None of that changes what Step 1 *is*. It's still one LLM call per message, no memory between turns, no tools. It just got a proper front door.
+None of that changes what Step 1 *is* conceptually — no tools, no planning, no agent loop deciding what to do next. It's still one direct LLM call per turn. It just turned out that "one call" has more surface area than it sounds like: what you send it (history, temperature, token limits) and what you do with what comes back (render it honestly) both matter for actually understanding what a call configures.
 
 ## What it actually does
 
 - Pick any configured model — Claude, a local Ollama model, GPT, Gemini, or Groq — from one dropdown, and ask it something
+- Ask follow-up questions and have them actually be follow-ups — the model sees the real conversation, not just your latest message in isolation
+- Tune temperature and max tokens from a settings popover instead of a hardcoded value in the code
 - Watch the answer stream in token by token
 - Get back real formatting: headings, lists, tables, blockquotes, inline and block code with syntax highlighting and a copy button, LaTeX math
-- Copy or regenerate any response
+- Copy or regenerate any response — regenerating replays the exact model/temperature/max-tokens that response was originally generated with
 - If a provider isn't configured (no API key), it shows up in the picker as unavailable with the actual reason — it doesn't just silently fail when you pick it
 
 ## Providers

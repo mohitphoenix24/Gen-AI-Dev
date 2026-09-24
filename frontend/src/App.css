@@ -309,6 +309,115 @@ body {
   box-shadow: 0 0 6px rgba(217, 117, 106, 0.5);
 }
 
+/* ---------- Header controls / settings popover ---------- */
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-selector {
+  position: relative;
+}
+
+.settings-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.settings-trigger:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.settings-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 250px;
+  background: var(--bg-elevated-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 14px;
+  z-index: 30;
+  animation: popover-in 0.16s ease;
+}
+
+.settings-popover-title {
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-field + .settings-field {
+  margin-top: 16px;
+}
+
+.settings-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.settings-field-value {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.settings-field input[type="number"] {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.settings-field input[type="number"]:focus {
+  border-color: var(--accent);
+}
+
+.settings-field-hint {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
 /* ---------- Banners ---------- */
 
 .banner {

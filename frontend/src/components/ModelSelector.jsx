@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import ModelIcon from "./ModelIcon";
+import { usePopover } from "../hooks/usePopover";
 
 // "cloud"/"local" are the only kind values the backend currently sends
 // (providers/base.py). This just controls display order for those two -
@@ -31,24 +31,7 @@ function ChevronIcon(props) {
 }
 
 export default function ModelSelector({ models, status, selectedId, onChange, disabled }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    function handlePointerDown(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setIsOpen(false);
-    }
-    function handleKeyDown(e) {
-      if (e.key === "Escape") setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
+  const { isOpen, setIsOpen, rootRef } = usePopover();
 
   if (status === "loading") {
     return <div className="model-trigger model-trigger-pending">Loading models…</div>;

@@ -43,14 +43,28 @@ class OllamaProvider(LLMProvider):
             for n in names
         ]
 
-    def stream(self, model: str, question: str) -> Iterator[str]:
+    def stream(
+        self,
+        model: str,
+        messages: list[dict],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterator[str]:
+        options = {}
+        if temperature is not None:
+            options["temperature"] = temperature
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens  # Ollama's name for max output tokens
+
         response = requests.post(
             f"{self.base_url}/api/chat",
             json={
                 "model": model,
-                "messages": [{"role": "user", "content": question}],
+                "messages": messages,
                 "stream": True,
                 "think": False,  # skip the reasoning phase - answer directly
+                "options": options,
             },
             stream=True,
             timeout=120,

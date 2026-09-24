@@ -8,6 +8,7 @@ doesn't know providers exist.
 """
 
 import json
+from typing import Optional
 
 from llm.base import LLMProvider
 
@@ -17,10 +18,17 @@ def sse(event_type: str, **data) -> str:
     return f"data: {json.dumps({'type': event_type, **data})}\n\n"
 
 
-def stream_response(provider: LLMProvider, model: str, question: str):
+def stream_response(
+    provider: LLMProvider,
+    model: str,
+    messages: list[dict],
+    *,
+    temperature: Optional[float] = None,
+    max_tokens: Optional[int] = None,
+):
     yield sse("start")
     try:
-        for text in provider.stream(model, question):
+        for text in provider.stream(model, messages, temperature=temperature, max_tokens=max_tokens):
             yield sse("delta", text=text)
         yield sse("done")
     except Exception as e:

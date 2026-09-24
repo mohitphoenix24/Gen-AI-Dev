@@ -1,5 +1,5 @@
 import os
-from typing import Iterator
+from typing import Iterator, Optional
 
 from groq import Groq
 
@@ -37,13 +37,21 @@ class GroqProvider(LLMProvider):
             )
         ]
 
-    def stream(self, model: str, question: str) -> Iterator[str]:
+    def stream(
+        self,
+        model: str,
+        messages: list[dict],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterator[str]:
         client = Groq()  # reads GROQ_API_KEY from the environment
-        stream = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": question}],
-            stream=True,
-        )
+        kwargs = {"model": model, "messages": messages, "stream": True}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        stream = client.chat.completions.create(**kwargs)
         for chunk in stream:
             delta = chunk.choices[0].delta.content
             if delta:

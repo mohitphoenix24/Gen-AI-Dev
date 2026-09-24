@@ -39,9 +39,28 @@ class LLMProvider(ABC):
         """Models this provider can currently serve."""
 
     @abstractmethod
-    def stream(self, model: str, question: str) -> Iterator[str]:
+    def stream(
+        self,
+        model: str,
+        messages: list[dict],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterator[str]:
         """
-        Answer `question` with `model`, yielding response text as it arrives.
+        Answer `messages` with `model`, yielding response text as it arrives.
+
+        `messages` is the whole conversation so far, oldest first, each one
+        `{"role": "user" | "assistant", "content": str}` - the last entry is
+        the newest question. This is what gives Step 1 actual conversational
+        memory: every provider already accepts a message history natively
+        (Gemini's SDK is the one exception that needs translating into its
+        own shape - see llm/gemini.py), so passing the whole thing through
+        instead of a single string costs nothing.
+
+        `temperature` and `max_tokens` are optional generation controls from
+        the UI. A provider that doesn't support one should just ignore it
+        rather than raise.
 
         Provider-specific errors (a bad API key, a network timeout, ...) should
         simply be allowed to raise -- the gateway (streaming.py) turns any

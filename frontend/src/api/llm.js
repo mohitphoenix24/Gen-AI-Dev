@@ -21,13 +21,19 @@ export async function getModels() {
  * callbacks as it arrives. Understands the backend's SSE event protocol
  * (start/delta/done/error) so nothing above this function has to.
  *
+ * `messages` is the whole conversation so far (oldest first, last entry is
+ * the newest question) - that's what gives the model actual memory of
+ * earlier turns instead of answering each message in isolation.
+ *
  * Pass `signal` from an AbortController to make the request cancellable -
  * aborting calls `onAbort` instead of `onError`, since it was requested,
  * not a failure.
  */
 export async function streamChat({
-  question,
+  messages,
   model,
+  temperature,
+  maxTokens,
   onStart,
   onDelta,
   onDone,
@@ -40,7 +46,7 @@ export async function streamChat({
     response = await fetch(`${API_BASE}/api/ask/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, model }),
+      body: JSON.stringify({ messages, model, temperature, max_tokens: maxTokens }),
       signal,
     });
   } catch (err) {

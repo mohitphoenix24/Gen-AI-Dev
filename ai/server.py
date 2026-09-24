@@ -8,11 +8,13 @@ provider never touches this file; see llm/registry.py.
     React app --POST /api/ask/stream--> gateway --> provider registry --> ClaudeProvider / OllamaProvider / ...
 """
 
+from typing import Optional
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from llm.registry import all_providers, get_provider
 from streaming import stream_response
@@ -35,11 +37,21 @@ async def invalid_body(request: Request, exc: RequestValidationError):
     return JSONResponse(status_code=400, content={"error": "invalid request body"})
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
 class AskRequest(BaseModel):
-    # Defaults (not required fields) so a missing field is just an empty
-    # string, handled by the same manual checks below - not a framework 422.
-    question: str = ""
+    # Defaults (not required fields) so a missing field just fails the manual
+    # checks below - not a framework 422 with FastAPI's own error shape.
+    messages: list[ChatMessage] = []
     model: str = ""
+    # Generation controls from the UI. None means "let the provider use its
+    # own default" rather than forcing one - a provider that doesn't support
+    # a field just ignores it (see llm/base.py).
+    temperature: Optional[float] = Field(default=None, ge=0, le=2)
+    max_tokens: Optional[int] = Field(default=None, gt=0)
 
 
 @app.get("/api/models")
@@ -62,11 +74,11 @@ def models():
 
 @app.post("/api/ask/stream")
 def ask_stream(body: AskRequest):
-    question = body.question.strip()
+    messages = [m.model_dump() for m in body.messages]
     model_id = body.model.strip()
 
-    if not question:
-        return JSONResponse(status_code=400, content={"error": "question is required"})
+    if not messages:
+        return JSONResponse(status_code=400, content={"error": "messages is required"})
     if ":" not in model_id:
         return JSONResponse(status_code=400, content={"error": "model is required"})
 
@@ -83,7 +95,7 @@ def ask_stream(body: AskRequest):
     # providers themselves make blocking sync HTTP calls (requests, the
     # Anthropic SDK's sync client), not async ones.
     return StreamingResponse(
-        stream_response(provider, model_name, question),
+        stream_response(provider, model_name, messages, temperature=body.temperature, max_tokens=body.max_tokens),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

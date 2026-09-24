@@ -1,5 +1,5 @@
 import os
-from typing import Iterator
+from typing import Iterator, Optional
 
 import anthropic
 
@@ -31,11 +31,17 @@ class ClaudeProvider(LLMProvider):
             )
         ]
 
-    def stream(self, model: str, question: str) -> Iterator[str]:
+    def stream(
+        self,
+        model: str,
+        messages: list[dict],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Iterator[str]:
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
-        with client.messages.stream(
-            model=model,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": question}],
-        ) as stream:
+        kwargs = {"model": model, "max_tokens": max_tokens or 1024, "messages": messages}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        with client.messages.stream(**kwargs) as stream:
             yield from stream.text_stream

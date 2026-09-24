@@ -1,0 +1,7 @@
+anthropic
+openai
+google-genai
+groq
+fastapi
+uvicorn
+requests
